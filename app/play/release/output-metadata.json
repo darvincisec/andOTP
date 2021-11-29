@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "org.shadowice.flocke.andotp",
+  "variantName": "processPlayReleaseResources",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "versionCode": 39,
+      "versionName": "0.9.0.1-play",
+      "outputFile": "app-play-release.apk"
+    }
+  ]
+}

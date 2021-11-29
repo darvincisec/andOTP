@@ -24,6 +24,12 @@
 package org.shadowice.flocke.andotp.Utilities;
 
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.crypto.digests.MD5Digest;
+import org.bouncycastle.crypto.digests.SHA1Digest;
+import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.bouncycastle.crypto.digests.SHA512Digest;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -51,16 +57,36 @@ public class TokenCalculator {
 
     public static final HashAlgorithm DEFAULT_ALGORITHM = HashAlgorithm.SHA1;
 
-    private static byte[] generateHash(HashAlgorithm algorithm, byte[] key, byte[] data)
-            throws NoSuchAlgorithmException, InvalidKeyException {
-        String algo = "Hmac" + algorithm.toString();
-
-        Mac mac = Mac.getInstance(algo);
-        mac.init(new SecretKeySpec(key, algo));
-
-        return mac.doFinal(data);
+    private static byte[] generateHash(HashAlgorithm algorithm, byte[] key, byte[] data) {
+        HMac hMac = null;
+        byte[] out;
+        switch(algorithm) {
+            case SHA1:
+                hMac = new HMac(new SHA1Digest());
+                break;
+            case SHA256:
+                hMac = new HMac(new SHA256Digest());
+                break;
+            case SHA512:
+                hMac = new HMac(new SHA512Digest());
+                break;
+        }
+        hMac.init(new KeyParameter(key));
+        hMac.update(data, 0, data.length);
+        out = new byte[hMac.getMacSize()];
+        hMac.doFinal(out, 0);
+        return out;
     }
 
+//    private static byte[] generateHash(HashAlgorithm algorithm, byte[] key, byte[] data)
+//            throws NoSuchAlgorithmException, InvalidKeyException {
+//        String algo = "Hmac" + algorithm.toString();
+//
+//        Mac mac = Mac.getInstance(algo);
+//        mac.init(new SecretKeySpec(key, algo));
+//
+//        return mac.doFinal(data);
+//    }
     // TODO: Rewrite tests so this compatibility wrapper can be removed
     public static int TOTP_RFC6238(byte[] secret, int period, long time, int digits, HashAlgorithm algorithm) {
         return TOTP_RFC6238(secret, period, time, digits, algorithm, 0);
@@ -130,19 +156,36 @@ public class TokenCalculator {
         String hashText = epochText + secret + PIN;
         String otp = "";
 
-        try {
-            // Create MD5 Hash
-            MessageDigest digest = MessageDigest.getInstance("MD5");
-            digest.update(hashText.getBytes());
-            byte[] messageDigest = digest.digest();
-
-            // Create Hex String
-            String hexString = new String(Hex.encodeHex(messageDigest));
-            otp = hexString.substring(0, 6);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+        MD5Digest digest = new MD5Digest();
+        digest.update(hashText.getBytes(),0, hashText.length());
+        byte[] messageDigest = new byte[digest.getDigestSize()];
+        digest.doFinal(messageDigest, 0);
+        // Create Hex String
+        String hexString = new String(Hex.encodeHex(messageDigest));
+        otp = hexString.substring(0, 6);
 
         return otp;
     }
+
+//    public static String MOTP(String PIN, String secret, long epoch, int offset)
+//    {
+//        String epochText = String.valueOf((epoch / 10) + offset);
+//        String hashText = epochText + secret + PIN;
+//        String otp = "";
+//
+//        try {
+//            // Create MD5 Hash
+//            MessageDigest digest = MessageDigest.getInstance("MD5");
+//            digest.update(hashText.getBytes());
+//            byte[] messageDigest = digest.digest();
+//
+//            // Create Hex String
+//            String hexString = new String(Hex.encodeHex(messageDigest));
+//            otp = hexString.substring(0, 6);
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return otp;
+//    }
 }
